@@ -46,14 +46,14 @@ they can return to the main page.
 */
 
 public class EditToDoActivity extends AppCompatActivity {
-    TextInputEditText name, date;
-    TextInputLayout dueDateBox, nameBox;
+    TextInputEditText name, date, address;
+    TextInputLayout dueDateBox, nameBox, addressBox;
     ToDo toDo;
     ArrayList<ToDo> toDoList;
     Date newDate;
     CoordinatorLayout coordinatorLayout;
     boolean validDate = true;
-    int RequestPermission = 1;
+    int requestNotificationPermission = 1;
     boolean notificationOn = false;
     String taskName;
 
@@ -80,8 +80,10 @@ public class EditToDoActivity extends AppCompatActivity {
 
         name = findViewById(R.id.editTaskName);
         date = findViewById(R.id.editTaskDueDate);
+        address = findViewById(R.id.editTaskAddress);
         dueDateBox = findViewById(R.id.dueDateBox);
         nameBox = findViewById(R.id.titleBox);
+        addressBox = findViewById(R.id.addressBox);
         coordinatorLayout = findViewById(R.id.myCoordinatorLayout);
 
 
@@ -101,6 +103,8 @@ public class EditToDoActivity extends AppCompatActivity {
             SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
             date.setText(sdf.format(toDo.getDate()));
         }
+        if (toDo.getAddress() != null)
+            address.setText(toDo.getAddress());
 
         // make box go red if the name is blank
         name.addTextChangedListener(new TextWatcher() {
@@ -157,7 +161,7 @@ public class EditToDoActivity extends AppCompatActivity {
         });
 
         // make pressing enter in the final text box submit the changes
-        date.setOnEditorActionListener((textView, i, keyEvent) -> {
+        address.setOnEditorActionListener((textView, i, keyEvent) -> {
             if (i == 6 || keyEvent.getAction() == 0)
                 submit(textView);
             return true;
@@ -165,12 +169,12 @@ public class EditToDoActivity extends AppCompatActivity {
 
         notify.setOnClickListener(v -> {
             if(notify.isChecked()){
-                if (ContextCompat.checkSelfPermission(EditToDo.this,
+                if (ContextCompat.checkSelfPermission(EditToDoActivity.this,
                         Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
                     notificationOn = true;
                 }
                 else{
-                    requestPermissions();
+                    requestNotificationPermissions();
                 }
             }
             else{
@@ -207,6 +211,12 @@ public class EditToDoActivity extends AppCompatActivity {
         }
         if(notificationOn){
             notificationCaller(getNotification("Late Task", String.format("%s is late", taskName)), 6000);
+        }
+        String newAddress = Objects.requireNonNull(address.getText()).toString();
+        if (!newAddress.equals("")) {
+            toDo.setAddress(newAddress);
+        } else {
+            toDo.setAddress(null);
         }
 
         goBack(view);
@@ -297,27 +307,16 @@ public class EditToDoActivity extends AppCompatActivity {
     }
 
     //method for creating dialogue box & asking for permissions
-    private void requestPermissions() {
+    private void requestNotificationPermissions() {
 
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)){
-            new AlertDialog.Builder(this)
-                    .setTitle("Notification Permission")
-                    .setMessage("Todo would like to send you notifications when a task is due soon or past-due")
-                    .setPositiveButton("Agree", (dialog, which) -> ActivityCompat.requestPermissions(EditToDo.this, new String[] {Manifest.permission.POST_NOTIFICATIONS}, RequestPermission))
-                    .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss())
-                    .create().show();
-
-
-        }else{
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.POST_NOTIFICATIONS}, RequestPermission);
-        }
+        ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.POST_NOTIFICATIONS}, requestNotificationPermission);
     }
 
     //Checks to see if the permission is granted or denied
     @SuppressLint("MissingSuperCall")
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == RequestPermission) {
+        if(requestCode == requestNotificationPermission) {
             if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                 Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
 

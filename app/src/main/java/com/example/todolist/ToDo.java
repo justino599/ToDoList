@@ -14,7 +14,7 @@ This is a serializable class to store information about to-dos.
 
 public class ToDo implements Serializable {
     private final UUID uuid = UUID.randomUUID(); // Implementation recommended by https://www.baeldung.com/java-uuid
-    private String text;
+    private String text, address;
     private boolean done;
     private Date date;
     private float maxGrade;
@@ -40,6 +40,14 @@ public class ToDo implements Serializable {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public boolean isDone() {

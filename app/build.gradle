@@ -25,21 +25,39 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    namespace 'com.example.todolist'
+
+    packagingOptions {
+        exclude 'project.properties'
+        resources.excludes.add("META-INF/*")
+        resources.excludes.add("android.support.v4.app.INotificationSideChannel")
+        resources.excludes.add("IResultReceiver")
+        resources.excludes.add("ResultReceiver")
+    }
 }
 
 dependencies {
 
-
     implementation 'androidx.appcompat:appcompat:1.5.1'
-    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'com.google.android.material:material:1.7.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation files('libs\\activation.jar')
-    implementation files('libs\\additionnal.jar')
-    implementation files('libs\\mail.jar')
+    implementation files('libs/activation.jar')
+    implementation files('libs/additionnal.jar')
+    implementation files('libs/mail.jar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.4'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.0'
     implementation "com.github.skydoves:powermenu:2.2.1"
     androidTestImplementation 'androidx.test:runner:1.5.1'
     androidTestImplementation 'androidx.test:rules:1.5.0'
+    implementation platform('com.google.cloud:libraries-bom:26.1.4')
+    implementation 'com.google.cloud:google-cloud-translate'
+    implementation 'com.google.android.gms:play-services-location:15.0.1'
+
+    // define a BOM and its version
+    implementation(platform("com.squareup.okhttp3:okhttp-bom:4.10.0"))
+
+    // define any required OkHttp artifacts without version
+    implementation("com.squareup.okhttp3:okhttp")
+    implementation("com.squareup.okhttp3:logging-interceptor")
 }

@@ -1,14 +1,18 @@
 package com.example.todolist;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,22 +22,30 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.skydoves.powermenu.CustomPowerMenu;
 import com.skydoves.powermenu.MenuAnimation;
 import com.skydoves.powermenu.PowerMenu;
 import com.skydoves.powermenu.PowerMenuItem;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,11 +54,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 
 /*
@@ -72,9 +91,10 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
     private FloatingActionButton toTopButton;
     private final boolean[] toTop = new boolean[2];
     private int toTopControl = 0; // 0: controlling incomplete list; 1: controlling completed list
-    private int sortingType=0; // this is used to control the sort of the tasks.
+    private int sortingType = 0; // this is used to control the sort of the tasks.
+    private int requestCoarseLocationPermission = 1, requestFineLocationPermission = 2;
 
-
+    private TranslateText translateText;
 
     // initialization code
     @Override
@@ -82,9 +102,10 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        translateText = new TranslateText(this);
+
         //Creates the notification channel that can be toggled on in the app info settings - Default is off.
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel("NotifyLate", "Late Task Notification", NotificationManager.IMPORTANCE_HIGH);
 
             NotificationManager manager = getSystemService(NotificationManager.class);
@@ -135,11 +156,11 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
         loadData();
     }
 
-    public void onSort(View view){
-        ArrayList<PowerMenuItem> list=new ArrayList<>();
-        list.add(new PowerMenuItem("Ascending Due Date",false));
-        list.add(new PowerMenuItem("Descending Due Date",false));
-        list.add(new PowerMenuItem("Total Marks",false));
+    public void onSort(View view) {
+        ArrayList<PowerMenuItem> list = new ArrayList<>();
+        list.add(new PowerMenuItem("Ascending Due Date", false));
+        list.add(new PowerMenuItem("Descending Due Date", false));
+        list.add(new PowerMenuItem("Total Marks", false));
         PowerMenu powerMenu = new PowerMenu.Builder(this)
                 .addItemList(list) // list has "Novel", "Poetry", "Art"
                 .setAnimation(MenuAnimation.SHOWUP_TOP_LEFT) // Animation start point (TOP | LEFT).
@@ -153,12 +174,12 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
                 .setSelectedMenuColor(ContextCompat.getColor(this, R.color.purple_500)).build();
         powerMenu.setOnMenuItemClickListener((position, item) -> {
             powerMenu.dismiss();
-            if(position==0)
+            if (position == 0)
                 sortingType = 0;
-            if (position==1)
+            if (position == 1)
                 sortingType = 1;
-            if(position==2)
-                sortingType=2;
+            if (position == 2)
+                sortingType = 2;
             loadData();
         });
         powerMenu.showAsDropDown(view);
@@ -202,19 +223,19 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
             else if (toDo.isDone() && filterAllows(toDo))
                 completed.add(toDo);
         }
-        if(sortingType==0) {
+        if (sortingType == 0) {
             Collections.sort(filtered, ToDo.DueDateAscComparator);
             Collections.sort(completed, ToDo.DueDateAscComparator);
         }
-        if(sortingType==1) {
+        if (sortingType == 1) {
             Collections.sort(filtered, ToDo.DueDateDescComparator);
             Collections.sort(completed, ToDo.DueDateDescComparator);
         }
-        if(sortingType==2){
-            for (ToDo task: filtered
-                 ) {
-                System.out.println(task.getText()+" total: "+task.getMaxGrade());
-                System.out.println(task.getText()+" Received: "+task.getGradeReceived());
+        if (sortingType == 2) {
+            for (ToDo task : filtered
+            ) {
+                System.out.println(task.getText() + " total: " + task.getMaxGrade());
+                System.out.println(task.getText() + " Received: " + task.getGradeReceived());
             }
             Collections.sort(filtered, ToDo.TotalMarksComparator);
             Collections.sort(completed, ToDo.TotalMarksComparator);
@@ -289,9 +310,9 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
             save();
             // Clear filters
             for (String key : filters.keySet())
-                filters.put(key,false);
+                filters.put(key, false);
             // Clear search
-            searchView.setQuery("",true);
+            searchView.setQuery("", true);
             loadData();
             // Make sure incomplete tasks list is open, not completed tasks
             if (!showIncomplete)
@@ -375,10 +396,12 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
         itemList.add(new PowerMenuItem("Edit", false));
         itemList.add(new PowerMenuItem("Edit Tags", false));
         itemList.add(new PowerMenuItem("Delete", false));
-        itemList.add(new PowerMenuItem("Set task as 'Graded'",false));
-        if(clickedToDo.getTags().contains("Graded")){
-            itemList.add(new PowerMenuItem("Enter Grade Received",false));
-        }
+        itemList.add(new PowerMenuItem("Set task as 'Graded'", false));
+        if (clickedToDo.getTags().contains("Graded"))
+            itemList.add(new PowerMenuItem("Enter Grade Received", false));
+        itemList.add(new PowerMenuItem("Translate", false));
+        if (clickedToDo.getAddress() != null)
+            itemList.add(new PowerMenuItem("Get Travel Time"));
 
         PowerMenu powerMenu = new PowerMenu.Builder(this)
                 .addItemList(itemList)
@@ -386,7 +409,8 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
                 .setMenuRadius(10f) // sets the corner radius.
                 .setMenuShadow(10f) // sets the shadow.
                 .setTextColor(ContextCompat.getColor(this, R.color.black))
-                .setTextGravity(Gravity.CENTER)
+                .setTextSize(14)
+                .setTextGravity(Gravity.END)
                 .setSelectedTextColor(Color.WHITE)
                 .setMenuColor(Color.WHITE)
                 .setSelectedMenuColor(ContextCompat.getColor(this, R.color.purple_500))
@@ -432,18 +456,44 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
                 i.putExtra("ToDoList", toDoList);
                 i.putExtra("Index", toDoList.indexOf(clickedToDo));
                 startActivityForResult(i, ADD_TAGS_ACTIVITY_REQUEST);
-            } else if(item.getTitle().equals("Set task as 'Graded'")) {
+            } else if (item.getTitle().equals("Set task as 'Graded'")) {
                 clickedToDo.addTag("Graded");
                 clickedToDo.removeTag("Ungraded");
                 Intent i = new Intent(this, TotalGradeActivity.class);
                 i.putExtra("ToDoList", toDoList);
                 i.putExtra("Index", toDoList.indexOf(clickedToDo));
                 startActivityForResult(i, EDIT_TODO_ACTIVITY_REQUEST);
-            } else if(item.getTitle().equals("Enter Grade Received")) { // This will show up only for Graded ToDos.
-                Intent i=new Intent(this,GradeReceived.class);
+            } else if (item.getTitle().equals("Enter Grade Received")) { // This will show up only for Graded ToDos.
+                Intent i = new Intent(this, GradeReceived.class);
                 i.putExtra("ToDoList", toDoList);
                 i.putExtra("Index", toDoList.indexOf(clickedToDo));
-                startActivityForResult(i,EDIT_TODO_ACTIVITY_REQUEST);
+                startActivityForResult(i, EDIT_TODO_ACTIVITY_REQUEST);
+            } else if (item.getTitle().equals("Translate")) {
+                // Open dialog with spinner options
+                AlertDialog.Builder b = new AlertDialog.Builder(this);
+                b.setTitle("Select language");
+                String[] languages = translateText.getLanguages();
+                b.setItems(languages, (dialog, which) -> {
+                    dialog.dismiss();
+                    String language = languages[which];
+                    clickedToDo.setText(translateText.translate(clickedToDo.getText(), language));
+                    save();
+                    loadData();
+                });
+                b.show();
+            } else if (item.getTitle().equals("Get Travel Time")) {
+                FusedLocationProviderClient fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    requestLocationPermissions();
+                    return;
+                }
+                fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+                    if (location != null)
+                        makeNotification(getTravelTime(String.format("%s, %s", location.getLatitude(), location.getLongitude()), clickedToDo.getAddress()));
+                    else
+                        makeNotification("Can't get your location");
+                });
+
             }
         });
         powerMenu.showAsAnchorRightBottom(view); // view is where the menu is anchored
@@ -628,6 +678,63 @@ public class MainActivity extends AppCompatActivity implements ToDoClickListener
         } else {
             toTop[toTopControl] = true;
             toTopButton.setImageResource(R.drawable.dropdown_up);
+        }
+    }
+
+    public void requestLocationPermissions() {
+        ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_COARSE_LOCATION}, requestCoarseLocationPermission);
+    }
+
+    //Checks to see if the permission is granted or denied
+    @SuppressLint("MissingSuperCall")
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == requestCoarseLocationPermission) {
+            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "Permission Granted Coarse", Toast.LENGTH_SHORT).show();
+                ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION}, requestFineLocationPermission);
+            }else{
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+            }
+
+        } else if(requestCode == requestFineLocationPermission) {
+            if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "Permission Granted Fine", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+    }
+
+    private String getTravelTime(String origin, String destination) {
+        // Make Request
+        // Get API key from a Config class that is not added to Git because I don't want to leak that onto a public repo
+        String requestURL = String.format("https://maps.googleapis.com/maps/api/distancematrix/json?origins=%s&destinations=%s&units=metric&key=%s", encodeURL(origin), encodeURL(destination), Config.API_KEY);
+        System.out.println(requestURL);
+        try {
+            OkHttpClient client = new OkHttpClient();
+            Request request = new Request.Builder()
+                    .url(requestURL)
+                    .build();
+            Response response = client.newCall(request).execute();
+            JSONObject jsonObject = new JSONObject(response.body().string());
+            System.out.println(jsonObject);
+            if (jsonObject.getString("status").equals("OK") && jsonObject.getJSONArray("rows").getJSONObject(0).getJSONArray("elements").getJSONObject(0).getString("status").equals("OK"))
+                return jsonObject.getJSONArray("rows").getJSONObject(0).getJSONArray("elements").getJSONObject(0).getJSONObject("duration").getString("text");
+            else
+                throw new IllegalArgumentException("Invalid origin or destination: " + origin + " to " + destination);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        return "Error occurred while calculating time";
+    }
+
+    private static String encodeURL(String value) {
+        try {
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException ex) {
+            throw new RuntimeException(ex.getCause());
         }
     }
 
