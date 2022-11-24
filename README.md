@@ -68,8 +68,8 @@ I have implemented Google's Cloud Translation API so that users can translate an
 
 ### <a href="https://developers.google.com/maps/documentation/distance-matrix/overview">API #2 - Google Distance Matrix API</a>
 I have implemented Google Map's Distance Matrix API so that users can see the time it will take for them to drive to the location of the task
-<img width=300 src="https://user-images.githubusercontent.com/77038122/203679822-f49c8996-6e25-4657-a008-c395689ef6cc.png"/>
-<img width=300 src="https://user-images.githubusercontent.com/77038122/203680288-a6234fe9-5667-411a-9f6c-3c93d96a6e59.png"/>
+
+<img width=300 src="https://user-images.githubusercontent.com/77038122/203679822-f49c8996-6e25-4657-a008-c395689ef6cc.png"/><img width=300 src="https://user-images.githubusercontent.com/77038122/203680288-a6234fe9-5667-411a-9f6c-3c93d96a6e59.png"/>
 
 ## Compiling our code
 There are two ways to compile our code:
