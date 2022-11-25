@@ -74,5 +74,5 @@ I have implemented Google Map's Distance Matrix API so that users can see the ti
 ## Compiling our code
 There are two ways to compile our code:
 1) Clone the project in Android studio and run it on an emulator in the app. *Note that you will need to supply your own API keys in order to do it this way*
-2) Use the [apk file](https://github.com/justino599/ToDoList/releases/download/v0.3.0/ToDoList-v0.3.0.apk) from our latest [release](https://github.com/justino599/ToDoList/releases) to install the app on an Android phone
+2) Use the [apk file](https://github.com/justino599/ToDoList/releases/download/v0.3.0/ToDoList-v.0.3.0.apk) from our latest [release](https://github.com/justino599/ToDoList/releases) to install the app on an Android phone
 
