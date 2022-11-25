@@ -62,17 +62,17 @@ Test code is contained in **EditToDoActivityUnitTest**
 ## Documentation for Individual Assignment
 
 ### <a href="https://cloud.google.com/translate">API #1 - Google Cloud Translation API</a>
-I have implemented Google's Cloud Translation API so that users can translate any of their tasks to another language
+I have implemented Google's Cloud Translation API so that users can translate any of their tasks to another language. The feature is accessed by clicking the three dot beside a task and clicking "Translate". Then the user can choose the language to translate to from a list of all available languages. This API is runs through the use of Google's library, which has been implemented into the app. In order to connect to the service, I had to download a file containing my credentials, then that file needs to be loaded by the GoogleCredentials class to get access to the translation service. Once the service has been opened, you can send text to it along with the language you would like to translate to in the form of two character language codes such as "en", "fr", or "de". I implemented a failsafe that keep track of all characters translated and limited it to 1000 to make sure that I do not exceed my free translation quota from Google. 
 
 <img width=300 src="https://user-images.githubusercontent.com/77038122/203679020-b7702b42-2080-4c19-a3e9-f80718e97b25.png"/><img width=300 src="https://user-images.githubusercontent.com/77038122/203679510-29fa6dc8-236e-413f-8847-ec176f389e4b.png"/>
 
 ### <a href="https://developers.google.com/maps/documentation/distance-matrix/overview">API #2 - Google Distance Matrix API</a>
-I have implemented Google Map's Distance Matrix API so that users can see the time it will take for them to drive to the location of the task
+I have implemented Google Map's Distance Matrix API so that users can see the time it will take for them to drive to the location of the task. To use the feature, the user mut set a location for the task, then they can choose the "Get Travel Time" option from the context menu that appears after clicking the three dots beside a task. This API works through an HTTP web request. The url contains the origin and destination of the trip as well as my api key. I am using the OkHttpClient library to make the request and get the response. The response is a JSON file that contains information about the distance and time of the trip between the two destinations supplied in the request url. This information is then parsed and displayed to the user in the form of a Snackbar popup.
 
 <img width=300 src="https://user-images.githubusercontent.com/77038122/203679822-f49c8996-6e25-4657-a008-c395689ef6cc.png"/><img width=300 src="https://user-images.githubusercontent.com/77038122/203680288-a6234fe9-5667-411a-9f6c-3c93d96a6e59.png"/>
 
 ## Compiling our code
 There are two ways to compile our code:
 1) Clone the project in Android studio and run it on an emulator in the app. *Note that you will need to supply your own API keys in order to do it this way*
-2) Use the [apk file](https://github.com/justino599/ToDoList/releases/download/v0.3.0/ToDoList-v0.3.0.apk) from our latest [release](https://github.com/justino599/ToDoList/releases) to install the app on an Android phone
+2) Use the [apk file](https://github.com/justino599/ToDoList/releases/download/v0.3.0/ToDoList-v0.3.0.apk) from the latest [release](https://github.com/justino599/ToDoList/releases) to install the app on an Android phone
 
