@@ -101,6 +101,7 @@ public class EditToDoActivity extends AppCompatActivity {
         name.setText(toDo.getText());
         if (toDo.getDate() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+            newDate = toDo.getDate();
             date.setText(sdf.format(toDo.getDate()));
         }
         if (toDo.getAddress() != null)
